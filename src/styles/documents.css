@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+/* 🌌 Premium 2025 Theme — RGB-safe for PDF Export */
+body {
+  background: linear-gradient(145deg, #0a0f1d, #111b33, #1a2242);
+  color: #e5e7eb;
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  overflow-x: hidden;
+}
+
+/* --- Glass Card --- */
+.glass-card-modern {
+  background: linear-gradient(145deg, rgba(18, 23, 36, 0.85), rgba(22, 30, 50, 0.75));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px) saturate(160%);
+  box-shadow: inset 0 0 0.5px rgba(255, 255, 255, 0.1), 0 8px 30px rgba(0, 0, 0, 0.4);
+  transition: all 0.4s ease-in-out;
+}
+.glass-card-modern:hover {
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.15), 0 0 40px rgba(255, 255, 255, 0.05);
+  transform: translateY(-4px);
+}
+
+/* --- Inputs --- */
+.input-modern {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: rgba(20, 26, 43, 0.8);
+  color: #e5e7eb;
+  border: 1px solid #374151;
+  transition: all 0.3s ease;
+}
+.input-modern:hover {
+  border-color: #3b82f6;
+}
+.input-modern:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+}
+
+/* --- Buttons --- */
+.btn-primary-modern {
+  padding: 0.6rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(90deg, #2563eb, #1e40af);
+  box-shadow: 0 0 15px rgba(37, 99, 235, 0.4);
+  transition: all 0.3s ease-in-out;
+}
+.btn-primary-modern:hover {
+  transform: scale(1.05);
+  background: linear-gradient(90deg, #1e40af, #3b82f6);
+  box-shadow: 0 0 25px rgba(37, 99, 235, 0.6);
+}
+.btn-secondary-modern {
+  padding: 0.6rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 500;
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  color: #93c5fd;
+  background: transparent;
+  transition: all 0.3s ease;
+}
+.btn-secondary-modern:hover {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: rgba(59, 130, 246, 0.6);
+}
+
+/* --- Scrollbars --- */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.25);
+  border-radius: 8px;
+}
+
+/* --- Animation --- */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.25;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(1.08);
+  }
+}
+.animate-pulse-slow {
+  animation: pulse-slow 6s ease-in-out infinite;
+}
+
+/* --- Export Mode Override --- */
+.pdf-export-mode * {
+  background: #0b0f1a !important;
+  color: #e5e7eb !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  border-color: #374151 !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* --- Responsive --- */
+@media (max-width: 640px) {
+  .glass-card-modern {
+    padding: 1rem;
+  }
+  .btn-primary-modern {
+    padding: 0.5rem 1rem;
+  }
+  h1 {
+    font-size: 1.875rem;
+  }
+}

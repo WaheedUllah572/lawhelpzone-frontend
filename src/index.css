@@ -1,0 +1,60 @@
+@import "tailwindcss";
+@import "./styles/dashboard.css";
+
+/* 🌌 FORCE DARK THEME EVERYWHERE (OVERRIDE TAILWIND RESET) */
+html,
+body {
+  background: radial-gradient(circle at 20% 25%, rgba(90, 110, 255, 0.35), transparent 45%),
+              radial-gradient(circle at 80% 80%, rgba(120, 90, 255, 0.3), transparent 50%),
+              linear-gradient(to bottom right, #020610, #0b1020, #171c33) !important;
+  background-color: #020610 !important;
+  color-scheme: dark !important;
+  color: #e5e7eb !important;
+  font-family: system-ui, sans-serif !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  overflow-x: hidden;
+}
+
+/* 🌓 OVERRIDE ANY LIGHT DEFAULTS */
+html,
+html.light,
+body.light,
+:root {
+  background-color: #020610 !important;
+  color: #e5e7eb !important;
+}
+
+/* ✅ GLASS CARD FIX */
+.glass-card,
+.card {
+  background: rgba(15, 22, 42, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  backdrop-filter: blur(30px) saturate(180%) !important;
+  box-shadow:
+    0 0 35px rgba(90, 110, 255, 0.25),
+    inset 0 0 12px rgba(255, 255, 255, 0.06) !important;
+}
+
+/* ✅ BUTTONS */
+.btn-primary {
+  @apply bg-gradient-to-r from-blue-700 to-indigo-700 text-white py-3 px-4 rounded-xl font-semibold shadow-md hover:shadow-lg hover:scale-[1.02] transition-all;
+  background-size: 200% auto;
+}
+.btn-primary:hover {
+  background-position: right center;
+}
+
+/* ✅ TEXT */
+p, span, small, h1, h2, h3, h4, h5, h6, .subtitle {
+  color: #e0e7ff !important;
+}
+
+/* ✅ SCROLLBAR DARK */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(80, 100, 255, 0.3);
+  border-radius: 4px;
+}
