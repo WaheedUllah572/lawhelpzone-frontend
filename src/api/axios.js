@@ -1,7 +1,9 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5050/api",
+  baseURL: import.meta.env.VITE_API_BASE_URL
+    ? `${import.meta.env.VITE_API_BASE_URL}/api`
+    : "http://localhost:5050/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -18,5 +20,4 @@ export const generateDocument = async (formData) => {
   }
 };
 
-// ✅ Other API exports can go below as needed
 export default api;

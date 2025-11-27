@@ -19,12 +19,12 @@ export default function Chat() {
   const reconnectTimer = useRef(null);
   let recognitionRef = useRef(null);
 
-  // 🧠 Initialize WebSocket (no language parameter)
+  // 🧠 Initialize WebSocket with backend URL
   const connectWebSocket = () => {
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const host = window.location.hostname;
-    const port = 5050;
-    const wsUrl = `${protocol}://${host}:${port}/api/chat`;
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050";
+    const wsUrl = baseUrl.replace("http", "ws") + "/api/chat";
+
+    console.log("🔌 Connecting WebSocket:", wsUrl);
     const ws = new WebSocket(wsUrl);
     socketRef.current = ws;
 
@@ -51,8 +51,7 @@ export default function Chat() {
       return;
     }
 
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     recognition.lang = "en-US";
     recognition.interimResults = true;
@@ -94,8 +93,7 @@ export default function Chat() {
         setMessages([
           {
             sender: "ai",
-            text:
-              "👋 Hello! I’m LawHelpZone, your AI Legal Assistant. How can I assist you today?",
+            text: "👋 Hello! I’m LawHelpZone, your AI Legal Assistant. How can I assist you today?",
           },
         ]);
       }, 600);
@@ -109,10 +107,11 @@ export default function Chat() {
   // 💾 Save Chat
   const saveChat = async (msgs) => {
     try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050";
       const joined = msgs
         .map((m) => `${m.sender === "user" ? "👤" : "🤖"} ${m.text}`)
         .join("\n\n");
-      await fetch("http://localhost:5050/api/save/", {
+      await fetch(`${baseUrl}/api/save/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -138,8 +137,10 @@ export default function Chat() {
 
     const formData = new FormData();
     formData.append("file", file);
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050";
+
     try {
-      const res = await fetch("http://localhost:5050/api/upload", {
+      const res = await fetch(`${baseUrl}/api/upload`, {
         method: "POST",
         body: formData,
       });
