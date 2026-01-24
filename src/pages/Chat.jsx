@@ -4,6 +4,8 @@ import { FiSend, FiPlus, FiMic, FiEdit3 } from "react-icons/fi";
 import SignatureModal from "../components/SignatureModal";
 import "../styles/chat.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -13,80 +15,51 @@ export default function Chat() {
   const [showSignModal, setShowSignModal] = useState(false);
   const [listening, setListening] = useState(false);
   const [interimText, setInterimText] = useState("");
+
   const socketRef = useRef(null);
+  const reconnectTimer = useRef(null);
   const chatEndRef = useRef(null);
   const greetedRef = useRef(false);
-  const reconnectTimer = useRef(null);
-  let recognitionRef = useRef(null);
+  const recognitionRef = useRef(null);
 
-  // 🧠 Initialize WebSocket with backend URL
+  /* -------------------- WEBSOCKET -------------------- */
   const connectWebSocket = () => {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050";
-    const wsUrl = baseUrl.replace("http", "ws") + "/api/chat";
-
-    console.log("🔌 Connecting WebSocket:", wsUrl);
-    const ws = new WebSocket(wsUrl);
-    socketRef.current = ws;
-
-    ws.onopen = () => console.log("✅ WebSocket connected:", wsUrl);
-    ws.onclose = () => {
-      console.warn("⚠️ WebSocket disconnected. Reconnecting in 2s...");
-      clearTimeout(reconnectTimer.current);
-      reconnectTimer.current = setTimeout(connectWebSocket, 2000);
-    };
-    ws.onmessage = (e) => {
-      setIsTyping(false);
-      const text = e.data;
-      if (text === "__PING__") return;
-      const newMsg = { sender: "ai", text };
-      setMessages((p) => [...p, newMsg]);
-      saveChat([...messages, newMsg]);
-    };
-  };
-
-  // 🎙️ Speech Recognition (English only)
-  const startListening = () => {
-    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-      alert("Speech recognition not supported in this browser.");
+    if (!API_BASE_URL) {
+      console.error("❌ VITE_API_BASE_URL is missing");
       return;
     }
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.interimResults = true;
-    recognition.continuous = false;
+    const wsUrl = API_BASE_URL.replace("https://", "wss://") + "/api/chat";
+    console.log("🔌 Connecting WebSocket:", wsUrl);
 
-    recognition.onstart = () => setListening(true);
-    recognition.onresult = (event) => {
-      let finalTranscript = "";
-      let interim = "";
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) finalTranscript += transcript + " ";
-        else interim += transcript;
-      }
-      setInterimText(interim);
-      if (finalTranscript.trim()) {
-        setInput(finalTranscript.trim());
-        handleSend(finalTranscript.trim());
-      }
+    const ws = new WebSocket(wsUrl);
+    socketRef.current = ws;
+
+    ws.onopen = () => {
+      console.log("✅ WebSocket connected");
     };
 
-    recognition.onerror = (e) => console.error("🎙️ Mic error:", e);
-    recognition.onend = () => setListening(false);
-    recognition.start();
-    recognitionRef.current = recognition;
+    ws.onmessage = (e) => {
+      if (e.data === "__PING__") return;
+      setIsTyping(false);
+      setMessages((prev) => [...prev, { sender: "ai", text: e.data }]);
+    };
+
+    ws.onerror = (err) => {
+      console.error("❌ WebSocket error:", err);
+    };
+
+    ws.onclose = () => {
+      console.warn("⚠️ WebSocket disconnected. Reconnecting in 3s...");
+      clearTimeout(reconnectTimer.current);
+      reconnectTimer.current = setTimeout(connectWebSocket, 3000);
+    };
   };
 
-  const stopListening = () => {
-    if (recognitionRef.current) recognitionRef.current.stop();
-    setListening(false);
-  };
-
-  // 📡 Init + Greet
+  /* -------------------- INIT -------------------- */
   useEffect(() => {
     connectWebSocket();
+
     if (!greetedRef.current) {
       greetedRef.current = true;
       setTimeout(() => {
@@ -96,184 +69,106 @@ export default function Chat() {
             text: "👋 Hello! I’m LawHelpZone, your AI Legal Assistant. How can I assist you today?",
           },
         ]);
-      }, 600);
+      }, 500);
     }
+
     return () => {
       clearTimeout(reconnectTimer.current);
       socketRef.current?.close();
     };
   }, []);
 
-  // 💾 Save Chat
-  const saveChat = async (msgs) => {
-    try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050";
-      const joined = msgs
-        .map((m) => `${m.sender === "user" ? "👤" : "🤖"} ${m.text}`)
-        .join("\n\n");
-      await fetch(`${baseUrl}/api/save/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: "LawHelpZone Chat Session",
-          content: joined,
-          user_id: "guest",
-        }),
-      });
-    } catch (err) {
-      console.warn("⚠️ Failed to save chat:", err);
+  /* -------------------- SEND MESSAGE -------------------- */
+  const handleSend = () => {
+    if (!input.trim()) return;
+
+    const msg = input.trim();
+    setMessages((prev) => [...prev, { sender: "user", text: msg }]);
+    setInput("");
+    setIsTyping(true);
+
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(msg);
+    } else {
+      console.warn("⚠️ WebSocket not ready, message skipped");
+      setIsTyping(false);
     }
   };
 
-  // 📎 Upload file
+  /* -------------------- FILE UPLOAD -------------------- */
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     setUploading(true);
-    setMessages((p) => [
-      ...p,
-      { sender: "ai", text: `📂 Uploading "${file.name}" and analyzing...` },
-    ]);
+    setMessages((p) => [...p, { sender: "ai", text: `📂 Uploading ${file.name}...` }]);
 
     const formData = new FormData();
     formData.append("file", file);
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5050";
 
     try {
-      const res = await fetch(`${baseUrl}/api/upload`, {
+      const res = await fetch(`${API_BASE_URL}/api/upload`, {
         method: "POST",
         body: formData,
       });
       const data = await res.json();
+
       if (res.ok) {
         setDocId(data.doc_id);
         setMessages((p) => [
           ...p,
-          {
-            sender: "ai",
-            text: `✅ File "${file.name}" analyzed successfully:\n\n${data.ai_summary}`,
-          },
+          { sender: "ai", text: `✅ File analyzed:\n\n${data.ai_summary}` },
         ]);
       } else {
-        setMessages((p) => [
-          ...p,
-          { sender: "ai", text: `⚠️ Upload failed: ${data.detail}` },
-        ]);
+        throw new Error(data.detail);
       }
     } catch (err) {
-      console.error("Upload error:", err);
+      setMessages((p) => [...p, { sender: "ai", text: `❌ Upload failed` }]);
+      console.error(err);
     } finally {
       setUploading(false);
     }
   };
 
-  const handleSend = (msgText = input) => {
-    if (!msgText.trim()) return;
-    const msg = { sender: "user", text: msgText.trim() };
-    setMessages((p) => [...p, msg]);
-    socketRef.current?.send(msgText.trim());
-    setInput("");
-    setIsTyping(true);
-    saveChat([...messages, msg]);
-  };
-
-  const handleKeyPress = (e) =>
-    e.key === "Enter" && !e.shiftKey && (e.preventDefault(), handleSend());
-
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  /* -------------------- UI -------------------- */
   return (
-    <div className="chat-page-container flex items-center justify-center min-h-screen">
-      <div className="glass-chat-box relative flex flex-col w-full max-w-3xl h-[85vh] rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
-        <div className="chat-header text-center py-4 bg-black/20 border-b border-white/10 flex flex-col gap-2">
-          <h1 className="text-2xl font-bold text-indigo-300 tracking-wide">
-            ⚖️ LawHelpZone AI Assistant
-          </h1>
-          <p className="text-sm text-gray-400">
-            Ask about laws, rights, upload a document, or use your voice.
-          </p>
+    <div className="chat-page-container">
+      <div className="glass-chat-box">
+        <div className="chat-header">
+          <h1>⚖️ LawHelpZone AI Assistant</h1>
+          <p>Ask about laws, rights, or upload a document</p>
         </div>
 
-        <div id="chat-box" className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div className="chat-body">
           <AnimatePresence>
             {messages.map((m, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <div
-                  className={`message-bubble ${
-                    m.sender === "user" ? "bubble-user" : "bubble-ai"
-                  }`}
-                >
-                  {m.text}
-                  {i === messages.length - 1 && m.sender === "ai" && docId && (
-                    <button
-                      onClick={() => setShowSignModal(true)}
-                      className="mt-3 text-sm bg-indigo-700 hover:bg-indigo-600 px-3 py-1.5 rounded-lg text-white flex items-center gap-1"
-                    >
-                      <FiEdit3 /> Review & Sign
-                    </button>
-                  )}
-                </div>
+              <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div className={`bubble ${m.sender}`}>{m.text}</div>
               </motion.div>
             ))}
           </AnimatePresence>
-
-          {uploading && (
-            <div className="text-gray-400 text-sm">🧠 Analyzing document...</div>
-          )}
-          {isTyping && (
-            <div className="text-indigo-400 text-sm animate-pulse">
-              🤖 LawHelpZone is typing...
-            </div>
-          )}
-          {interimText && listening && (
-            <div className="text-gray-400 italic text-sm">{interimText}</div>
-          )}
           <div ref={chatEndRef} />
         </div>
 
-        <div className="chat-input-area flex items-center gap-3 p-4 border-t border-white/10 bg-black/20">
-          <label
-            htmlFor="file-upload"
-            className="btn-icon bg-gradient-to-br from-indigo-700 to-blue-700 hover:scale-105 cursor-pointer"
-          >
+        <div className="chat-input">
+          <label>
             <FiPlus />
-            <input
-              id="file-upload"
-              type="file"
-              accept=".pdf,.docx,.txt"
-              style={{ display: "none" }}
-              onChange={handleFileUpload}
-            />
+            <input type="file" hidden onChange={handleFileUpload} />
           </label>
 
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyPress}
-            placeholder="Ask a legal question, upload a file, or use the mic..."
-            className="flex-1 resize-none rounded-2xl px-4 py-2 bg-white/10 text-white placeholder-gray-400"
-            rows={1}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder="Ask a legal question..."
           />
-          <button
-            onClick={handleSend}
-            className="btn-icon bg-gradient-to-r from-indigo-600 to-blue-600"
-          >
+
+          <button onClick={handleSend}>
             <FiSend />
-          </button>
-          <button
-            onClick={listening ? stopListening : startListening}
-            className={`btn-icon ${
-              listening ? "bg-red-600" : "bg-white/10 hover:bg-white/20"
-            }`}
-            title={listening ? "Stop Listening" : "Start Voice Input"}
-          >
-            <FiMic />
           </button>
         </div>
 
