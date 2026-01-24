@@ -13,21 +13,15 @@ export default function Chat() {
   const [uploading, setUploading] = useState(false);
   const [docId, setDocId] = useState(null);
   const [showSignModal, setShowSignModal] = useState(false);
-  const [listening, setListening] = useState(false);
-  const [interimText, setInterimText] = useState("");
 
   const socketRef = useRef(null);
   const reconnectTimer = useRef(null);
   const chatEndRef = useRef(null);
   const greetedRef = useRef(false);
-  const recognitionRef = useRef(null);
 
   /* -------------------- WEBSOCKET -------------------- */
   const connectWebSocket = () => {
-    if (!API_BASE_URL) {
-      console.error("❌ VITE_API_BASE_URL is missing");
-      return;
-    }
+    if (!API_BASE_URL) return;
 
     const wsUrl = API_BASE_URL.replace("https://", "wss://") + "/api/chat";
     console.log("🔌 Connecting WebSocket:", wsUrl);
@@ -35,9 +29,7 @@ export default function Chat() {
     const ws = new WebSocket(wsUrl);
     socketRef.current = ws;
 
-    ws.onopen = () => {
-      console.log("✅ WebSocket connected");
-    };
+    ws.onopen = () => console.log("✅ WebSocket connected");
 
     ws.onmessage = (e) => {
       if (e.data === "__PING__") return;
@@ -45,12 +37,7 @@ export default function Chat() {
       setMessages((prev) => [...prev, { sender: "ai", text: e.data }]);
     };
 
-    ws.onerror = (err) => {
-      console.error("❌ WebSocket error:", err);
-    };
-
     ws.onclose = () => {
-      console.warn("⚠️ WebSocket disconnected. Reconnecting in 3s...");
       clearTimeout(reconnectTimer.current);
       reconnectTimer.current = setTimeout(connectWebSocket, 3000);
     };
@@ -62,14 +49,12 @@ export default function Chat() {
 
     if (!greetedRef.current) {
       greetedRef.current = true;
-      setTimeout(() => {
-        setMessages([
-          {
-            sender: "ai",
-            text: "👋 Hello! I’m LawHelpZone, your AI Legal Assistant. How can I assist you today?",
-          },
-        ]);
-      }, 500);
+      setMessages([
+        {
+          sender: "ai",
+          text: "👋 Hello! I’m LawHelpZone, your AI Legal Assistant. How can I assist you today?",
+        },
+      ]);
     }
 
     return () => {
@@ -90,7 +75,6 @@ export default function Chat() {
     if (socketRef.current?.readyState === WebSocket.OPEN) {
       socketRef.current.send(msg);
     } else {
-      console.warn("⚠️ WebSocket not ready, message skipped");
       setIsTyping(false);
     }
   };
@@ -101,7 +85,10 @@ export default function Chat() {
     if (!file) return;
 
     setUploading(true);
-    setMessages((p) => [...p, { sender: "ai", text: `📂 Uploading ${file.name}...` }]);
+    setMessages((p) => [
+      ...p,
+      { sender: "ai", text: `📂 Uploading "${file.name}"...` },
+    ]);
 
     const formData = new FormData();
     formData.append("file", file);
@@ -119,12 +106,7 @@ export default function Chat() {
           ...p,
           { sender: "ai", text: `✅ File analyzed:\n\n${data.ai_summary}` },
         ]);
-      } else {
-        throw new Error(data.detail);
       }
-    } catch (err) {
-      setMessages((p) => [...p, { sender: "ai", text: `❌ Upload failed` }]);
-      console.error(err);
     } finally {
       setUploading(false);
     }
@@ -136,26 +118,55 @@ export default function Chat() {
 
   /* -------------------- UI -------------------- */
   return (
-    <div className="chat-page-container">
-      <div className="glass-chat-box">
-        <div className="chat-header">
-          <h1>⚖️ LawHelpZone AI Assistant</h1>
-          <p>Ask about laws, rights, or upload a document</p>
+    <div className="chat-page-container flex items-center justify-center min-h-screen">
+      <div className="glass-chat-box relative flex flex-col w-full max-w-3xl h-[85vh] rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
+        <div className="chat-header text-center py-4 bg-black/20 border-b border-white/10">
+          <h1 className="text-2xl font-bold text-indigo-300">
+            ⚖️ LawHelpZone AI Assistant
+          </h1>
+          <p className="text-sm text-gray-400">
+            Ask about laws, rights, or upload a document
+          </p>
         </div>
 
-        <div className="chat-body">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           <AnimatePresence>
             {messages.map((m, i) => (
-              <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div className={`bubble ${m.sender}`}>{m.text}</div>
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div
+                  className={`message-bubble ${
+                    m.sender === "user" ? "bubble-user" : "bubble-ai"
+                  }`}
+                >
+                  {m.text}
+                  {i === messages.length - 1 && m.sender === "ai" && docId && (
+                    <button
+                      onClick={() => setShowSignModal(true)}
+                      className="mt-3 text-sm bg-indigo-700 hover:bg-indigo-600 px-3 py-1.5 rounded-lg text-white flex items-center gap-1"
+                    >
+                      <FiEdit3 /> Review & Sign
+                    </button>
+                  )}
+                </div>
               </motion.div>
             ))}
           </AnimatePresence>
+
+          {isTyping && (
+            <div className="text-indigo-400 text-sm animate-pulse">
+              🤖 LawHelpZone is typing...
+            </div>
+          )}
+
           <div ref={chatEndRef} />
         </div>
 
-        <div className="chat-input">
-          <label>
+        <div className="chat-input-area flex items-center gap-3 p-4 border-t border-white/10 bg-black/20">
+          <label className="btn-icon bg-indigo-700 hover:bg-indigo-600 cursor-pointer">
             <FiPlus />
             <input type="file" hidden onChange={handleFileUpload} />
           </label>
@@ -165,15 +176,23 @@ export default function Chat() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             placeholder="Ask a legal question..."
+            className="flex-1 resize-none rounded-2xl px-4 py-2 bg-white/10 text-white"
+            rows={1}
           />
 
-          <button onClick={handleSend}>
+          <button
+            onClick={handleSend}
+            className="btn-icon bg-indigo-600 hover:bg-indigo-500"
+          >
             <FiSend />
           </button>
         </div>
 
         {showSignModal && (
-          <SignatureModal docId={docId} onClose={() => setShowSignModal(false)} />
+          <SignatureModal
+            docId={docId}
+            onClose={() => setShowSignModal(false)}
+          />
         )}
       </div>
     </div>
