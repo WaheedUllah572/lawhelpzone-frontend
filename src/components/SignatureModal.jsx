@@ -109,15 +109,15 @@ export default function SignatureModal({ docId, onClose }) {
     };
 
     if (file) {
-      formData.append("signature", file);
+formData.append("file", file);
       uploadForm(formData);
     } else {
       // convert drawn signature to PNG blob
       const canvas = canvasRef.current;
       canvas.toBlob((blob) => {
         if (blob) {
-          formData.append("signature", blob, "signature.png");
-          uploadForm(formData);
+          formData.append("file", blob, "signature.png");
+
         } else {
           alert("Please draw or upload a signature before saving.");
         }
