@@ -10,7 +10,7 @@ export default function DocumentPreview({ formData, aiText }) {
 
   const handleSave = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/save`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/upload`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -19,8 +19,8 @@ export default function DocumentPreview({ formData, aiText }) {
         }),
       });
       const data = await res.json();
-      setDocId(data.id);
-      alert(data.message || "Document saved successfully!");
+      setDocId(data.doc_id);
+      alert("Document saved successfully!");
     } catch (err) {
       console.error("Save failed:", err);
       alert("Failed to save document.");
@@ -31,16 +31,9 @@ export default function DocumentPreview({ formData, aiText }) {
     if (!docId) return alert("Please save the document first!");
     setExporting(true);
     try {
-      if (signedPdfUrl) {
-        window.open(signedPdfUrl, "_blank");
-        return;
-      }
-
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/save/pdf/${docId}`
+        `${import.meta.env.VITE_API_BASE_URL}/api/upload/pdf/${docId}`
       );
-
-      if (!response.ok) throw new Error("Failed to generate or fetch PDF");
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -72,33 +65,7 @@ export default function DocumentPreview({ formData, aiText }) {
           {formData.type} — {formData.country}
         </h3>
 
-        <p>
-          This agreement (“Agreement”) is made and entered into between{" "}
-          <span className="text-blue-400 font-semibold">{formData.partyA}</span>{" "}
-          and <span className="text-blue-400 font-semibold">{formData.partyB}</span>{" "}
-          on <span className="text-blue-400 font-semibold">{formData.effectiveDate}</span>.
-        </p>
-
-        <p className="mt-4">
-          Both parties agree to the following terms and conditions in accordance
-          with the laws of {formData.country}.
-        </p>
-
-        {aiText && (
-          <div className="mt-6">
-            <h4 className="text-blue-400 font-semibold mb-2">AI-Generated Draft:</h4>
-            <div className="markdown-container prose prose-invert max-w-none">
-              <ReactMarkdown>{aiText}</ReactMarkdown>
-            </div>
-          </div>
-        )}
-
-        {formData.clauses && (
-          <div className="mt-6">
-            <h4 className="text-blue-400 font-semibold mb-2">Custom Clauses:</h4>
-            <p>{formData.clauses}</p>
-          </div>
-        )}
+        <ReactMarkdown>{aiText}</ReactMarkdown>
       </div>
 
       <div className="mt-8 flex justify-end gap-4">
