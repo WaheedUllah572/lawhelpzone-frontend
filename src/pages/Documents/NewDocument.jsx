@@ -64,15 +64,16 @@ export default function NewDocument() {
     }
 
     try {
-      const res = await fetch("http://localhost:5050/api/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: `${formData.type} Agreement between ${formData.partyA} and ${formData.partyB}`,
-          content: aiText,
-          user_id: user.uid, // ✅ Include user ID
-        }),
-      });
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/save`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    title: `${formData.type} Agreement between ${formData.partyA} and ${formData.partyB}`,
+    content: aiText,
+    user_id: user.uid,
+  }),
+});
+
 
       const data = await res.json();
       if (res.ok) {

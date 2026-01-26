@@ -8,24 +8,19 @@ export default function MyDocuments() {
   const [documents, setDocuments] = useState([]);
 
   const fetchDocs = async (uid) => {
-    try {
-      const res = await fetch(`http://localhost:5050/api/save/list?user_id=${uid}`);
-      const data = await res.json();
-      setDocuments(data.documents || []);
-    } catch (err) {
-      console.error("Error fetching documents:", err);
-    }
-  };
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/save/list?user_id=${uid}`);
+  const data = await res.json();
+  setDocuments(data.documents || []);
+};
 
-  const handleDelete = async (id) => {
-    await fetch(`http://localhost:5050/api/save/delete/${id}`, { method: "DELETE" });
-    setDocuments((prev) => prev.filter((d) => d.id !== id));
-  };
+const handleDelete = async (id) => {
+  await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/save/delete/${id}`, { method: "DELETE" });
+};
 
-  // 🆕 View PDF in new tab
-  const handleView = async (id) => {
-    window.open(`http://localhost:5050/api/save/pdf/${id}`, "_blank");
-  };
+const handleView = async (id) => {
+  window.open(`${import.meta.env.VITE_API_BASE_URL}/api/save/pdf/${id}`, "_blank");
+};
+
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {

@@ -93,9 +93,9 @@ export default function SignatureModal({ docId, onClose }) {
     formData.append("signer_name", signer);
 
     const uploadForm = (form) => {
-      fetch("http://localhost:5050/api/sign", {
-        method: "POST",
-        body: form,
+      fetch(`${import.meta.env.VITE_API_BASE_URL}/api/sign`, {
+  method: "POST",
+  body: form,
       })
         .then((res) => res.json())
         .then((data) => {

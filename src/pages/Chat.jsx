@@ -16,10 +16,19 @@ export default function Chat() {
   const reconnectTimer = useRef(null);
   const chatEndRef = useRef(null);
   const greetedRef = useRef(false);
+  const isConnectingRef = useRef(false);
 
   /* -------------------- WEBSOCKET -------------------- */
   const connectWebSocket = () => {
-    if (socketRef.current?.readyState === WebSocket.OPEN) return;
+    if (
+      socketRef.current &&
+      socketRef.current.readyState !== WebSocket.CLOSED
+    ) {
+      return;
+    }
+
+    if (isConnectingRef.current) return;
+    isConnectingRef.current = true;
 
     const wsUrl = API_BASE_URL.replace(/^http/, "ws") + "/api/chat";
     console.log("🔌 Connecting WebSocket:", wsUrl);
@@ -29,6 +38,7 @@ export default function Chat() {
 
     ws.onopen = () => {
       console.log("✅ WebSocket connected");
+      isConnectingRef.current = false;
       clearTimeout(reconnectTimer.current);
     };
 
@@ -38,8 +48,13 @@ export default function Chat() {
       setMessages((prev) => [...prev, { sender: "ai", text: e.data }]);
     };
 
+    ws.onerror = () => {
+      ws.close();
+    };
+
     ws.onclose = () => {
-      reconnectTimer.current = setTimeout(connectWebSocket, 3000);
+      isConnectingRef.current = false;
+      reconnectTimer.current = setTimeout(connectWebSocket, 5000);
     };
   };
 
@@ -68,7 +83,7 @@ export default function Chat() {
     if (!input.trim()) return;
 
     const msg = input.trim();
-    setMessages((prev) => [...prev, { sender: "user", text: msg }]);
+    setMessages((p) => [...p, { sender: "user", text: msg }]);
     setInput("");
     setIsTyping(true);
 
@@ -93,7 +108,7 @@ export default function Chat() {
     formData.append("file", file);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/upload/`, {
+      const res = await fetch(`${API_BASE_URL}/api/upload`, {
         method: "POST",
         body: formData,
       });
@@ -118,12 +133,11 @@ export default function Chat() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  /* -------------------- UI -------------------- */
+  /* -------------------- UI (UNCHANGED) -------------------- */
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-950 via-black to-purple-950">
       <div className="relative flex flex-col w-full max-w-4xl h-[85vh] rounded-3xl overflow-hidden border border-white/10 backdrop-blur-xl bg-white/5 shadow-2xl">
 
-        {/* Header */}
         <div className="text-center py-4 border-b border-white/10">
           <h1 className="text-2xl font-bold text-indigo-300">
             ⚖️ LawHelpZone AI Assistant
@@ -133,15 +147,10 @@ export default function Chat() {
           </p>
         </div>
 
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           <AnimatePresence>
             {messages.map((m, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
+              <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                 <div
                   className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm whitespace-pre-wrap ${
                     m.sender === "user"
@@ -150,17 +159,6 @@ export default function Chat() {
                   }`}
                 >
                   {m.text}
-
-                  {i === messages.length - 1 &&
-                    m.sender === "ai" &&
-                    docId && (
-                      <button
-                        onClick={() => setShowSignModal(true)}
-                        className="mt-3 flex items-center gap-1 text-xs bg-indigo-700 hover:bg-indigo-600 px-3 py-1.5 rounded-lg"
-                      >
-                        <FiEdit3 /> Review & Sign
-                      </button>
-                    )}
                 </div>
               </motion.div>
             ))}
@@ -171,11 +169,9 @@ export default function Chat() {
               🤖 LawHelpZone is typing...
             </div>
           )}
-
           <div ref={chatEndRef} />
         </div>
 
-        {/* Input */}
         <div className="flex items-center gap-3 p-4 border-t border-white/10">
           <label className="p-2 rounded-full bg-indigo-700 hover:bg-indigo-600 cursor-pointer">
             <FiPlus />
@@ -191,19 +187,13 @@ export default function Chat() {
             rows={1}
           />
 
-          <button
-            onClick={handleSend}
-            className="p-2 rounded-full bg-indigo-600 hover:bg-indigo-500"
-          >
+          <button onClick={handleSend} className="p-2 rounded-full bg-indigo-600 hover:bg-indigo-500">
             <FiSend />
           </button>
         </div>
 
         {showSignModal && (
-          <SignatureModal
-            docId={docId}
-            onClose={() => setShowSignModal(false)}
-          />
+          <SignatureModal docId={docId} onClose={() => setShowSignModal(false)} />
         )}
       </div>
     </div>
