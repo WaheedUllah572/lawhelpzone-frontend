@@ -6,7 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import Chat from "./pages/Chat";
 import MyDocuments from "./pages/Documents/MyDocuments";
 import NewDocument from "./pages/Documents/NewDocument";
-import Settings from "./pages/Settings"; // ✅ NEW import
+import Settings from "./pages/Settings";
 
 // 🔒 Private route wrapper
 const PrivateRoute = ({ children }) => {
@@ -17,10 +17,13 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Login />} />
+        {/* ✅ Make Chat the Landing Page */}
+        <Route path="/" element={<Chat />} />
+
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
+        {/* 🔒 Protected Routes */}
         <Route
           path="/dashboard"
           element={
@@ -30,14 +33,8 @@ function App() {
           }
         />
 
-        <Route
-          path="/chat"
-          element={
-            <PrivateRoute>
-              <Chat />
-            </PrivateRoute>
-          }
-        />
+        {/* ✅ Chat is now PUBLIC */}
+        <Route path="/chat" element={<Chat />} />
 
         <Route
           path="/documents"
@@ -57,7 +54,6 @@ function App() {
           }
         />
 
-        {/* ✅ Added new Settings route */}
         <Route
           path="/settings"
           element={
@@ -67,8 +63,7 @@ function App() {
           }
         />
 
-        {/* Fallback for unknown routes */}
-        <Route path="*" element={<Navigate to="/dashboard" />} />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   );
