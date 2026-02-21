@@ -4,29 +4,38 @@ import Sidebar from "./Sidebar";
 import { motion } from "framer-motion";
 
 export default function Layout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
+  const [sidebarOpen, setSidebarOpen] = useState(
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+  );
 
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const toggleSidebar = () => setSidebarOpen((prev) => !prev);
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 768) setSidebarOpen(true);
+      if (window.innerWidth >= 768) {
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
     };
+
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   return (
     <div className="relative flex bg-gradient-to-br from-[#0b1020] via-[#11182a] to-[#1b203a] text-gray-100 transition-colors duration-500 overflow-hidden min-h-screen">
+      
+      {/* Sidebar */}
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
 
-      <div
-        className={`flex flex-col flex-1 min-h-screen transition-all duration-500 ${
-          sidebarOpen ? "md:ml-60" : "md:ml-20"
-        }`}
-      >
+      {/* Main Content Area */}
+      <div className="flex flex-col flex-1 min-h-screen transition-all duration-500 md:ml-60">
+        
+        {/* Top Navbar */}
         <Navbar toggleSidebar={toggleSidebar} />
 
+        {/* Page Content */}
         <motion.main
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -35,6 +44,7 @@ export default function Layout({ children }) {
         >
           {children}
         </motion.main>
+
       </div>
     </div>
   );
