@@ -19,7 +19,6 @@ export default function Chat() {
 
   const navigate = useNavigate();
 
-  /* -------------------- WEBSOCKET -------------------- */
   const connectWebSocket = () => {
     if (
       socketRef.current &&
@@ -54,7 +53,6 @@ export default function Chat() {
     };
   };
 
-  /* -------------------- INIT -------------------- */
   useEffect(() => {
     connectWebSocket();
 
@@ -74,11 +72,9 @@ export default function Chat() {
     };
   }, []);
 
-  /* -------------------- SEND MESSAGE -------------------- */
   const handleSend = () => {
     if (!input.trim()) return;
 
-    // 🚨 Limit to 2 free messages
     if (messageCount >= 2) {
       setMessages((prev) => [
         ...prev,
@@ -113,7 +109,6 @@ export default function Chat() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  /* -------------------- UI -------------------- */
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-950 via-black to-purple-950">
       <div className="relative flex flex-col w-full max-w-4xl h-[85vh] rounded-3xl overflow-hidden border border-white/10 backdrop-blur-xl bg-white/5 shadow-2xl">
@@ -150,7 +145,7 @@ export default function Chat() {
 
           {isTyping && (
             <div className="text-indigo-400 text-sm animate-pulse">
-              🤖 LawHelpZone is typing...
+              🤖 Generating response...
             </div>
           )}
 

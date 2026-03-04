@@ -8,7 +8,10 @@ import MyDocuments from "./pages/Documents/MyDocuments";
 import NewDocument from "./pages/Documents/NewDocument";
 import Settings from "./pages/Settings";
 
-// 🔒 Private route wrapper
+import Disclaimer from "./pages/Disclaimer";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Terms from "./pages/Terms";
+
 const PrivateRoute = ({ children }) => {
   return auth.currentUser ? children : <Navigate to="/login" />;
 };
@@ -17,13 +20,16 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* ✅ Make Chat the Landing Page */}
+
         <Route path="/" element={<Chat />} />
 
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* 🔒 Protected Routes */}
+        <Route path="/disclaimer" element={<Disclaimer />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<Terms />} />
+
         <Route
           path="/dashboard"
           element={
@@ -33,7 +39,6 @@ function App() {
           }
         />
 
-        {/* ✅ Chat is now PUBLIC */}
         <Route path="/chat" element={<Chat />} />
 
         <Route
