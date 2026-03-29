@@ -18,6 +18,10 @@ export default function MyDocuments() {
     setDocuments((prev) => prev.filter((d) => d.id !== id));
   };
 
+  const handleDownload = (id) => {
+    window.open(`${import.meta.env.VITE_API_BASE_URL}/api/upload/pdf/${id}`, "_blank");
+  };
+
   const handleView = (id) => {
     window.open(`${import.meta.env.VITE_API_BASE_URL}/api/upload/pdf/${id}`, "_blank");
   };
@@ -41,8 +45,9 @@ export default function MyDocuments() {
             key={doc.id}
             title={doc.title}
             date={doc.created_at}
-            onDownload={() => handleDelete(doc.id)}
+            onDownload={() => handleDownload(doc.id)}
             onView={() => handleView(doc.id)}
+            onDelete={() => handleDelete(doc.id)}
           />
         ))}
       </div>

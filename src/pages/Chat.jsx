@@ -19,6 +19,7 @@ export default function Chat() {
 
   const navigate = useNavigate();
 
+  /* -------------------- WEBSOCKET -------------------- */
   const connectWebSocket = () => {
     if (
       socketRef.current &&
@@ -53,6 +54,7 @@ export default function Chat() {
     };
   };
 
+  /* -------------------- INIT -------------------- */
   useEffect(() => {
     connectWebSocket();
 
@@ -72,6 +74,7 @@ export default function Chat() {
     };
   }, []);
 
+  /* -------------------- SEND MESSAGE -------------------- */
   const handleSend = () => {
     if (!input.trim()) return;
 
@@ -105,10 +108,48 @@ export default function Chat() {
     }
   };
 
+  /* -------------------- FILE UPLOAD -------------------- */
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file); // MUST be "file"
+
+    setMessages((p) => [
+      ...p,
+      { sender: "ai", text: `📂 Uploading "${file.name}"...` },
+    ]);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/upload/`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Upload failed");
+      }
+
+      setMessages((p) => [
+        ...p,
+        { sender: "ai", text: `✅ File analyzed:\n\n${data.ai_summary}` },
+      ]);
+    } catch (err) {
+      setMessages((p) => [
+        ...p,
+        { sender: "ai", text: `❌ ${err.message}` },
+      ]);
+    }
+  };
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  /* -------------------- UI -------------------- */
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-950 via-black to-purple-950">
       <div className="relative flex flex-col w-full max-w-4xl h-[85vh] rounded-3xl overflow-hidden border border-white/10 backdrop-blur-xl bg-white/5 shadow-2xl">
@@ -118,7 +159,7 @@ export default function Chat() {
             ⚖️ LawHelpZone AI Assistant
           </h1>
           <p className="text-sm text-gray-400">
-            Ask 2 questions free • Then sign up
+            Ask 2 questions free • Upload document • Then sign up
           </p>
         </div>
 
@@ -153,6 +194,12 @@ export default function Chat() {
         </div>
 
         <div className="flex items-center gap-3 p-4 border-t border-white/10">
+          {/* Upload Button */}
+          <label className="p-2 rounded-full bg-indigo-700 hover:bg-indigo-600 cursor-pointer">
+            <FiPlus />
+            <input type="file" hidden onChange={handleFileUpload} />
+          </label>
+
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
